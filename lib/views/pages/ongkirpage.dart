@@ -9,7 +9,7 @@ class Ongkirpage extends StatefulWidget {
 
 class _OngkirpageState extends State<Ongkirpage> {
   bool isLoading = false;
-  String dropdowndefault = 'jne';
+  String selectedCourier = 'jne';
   var kurir = [
     'jne',
     'tiki',
@@ -22,7 +22,8 @@ class _OngkirpageState extends State<Ongkirpage> {
   dynamic destinationProvId;
   dynamic originSelectedProv;
   dynamic destinationSelectedProv;
-  dynamic provinceData;
+  dynamic originProvinceData;
+  dynamic destinationProvinceData;
   Future<List<Province>> getProvinces() async {
     dynamic listProvince;
     await MasterDataService.getProvince().then((value) {
@@ -62,10 +63,27 @@ class _OngkirpageState extends State<Ongkirpage> {
     return listCity;
   }
 
+  List<Costs> listCosts = [];
+  Future<dynamic> getCostsData() async {
+    await RajaOngkirService.getMyOngkir(
+            originSelectedCity.cityId,
+            destinationSelectedCity.cityId,
+            int.parse(ctrlBerat.text),
+            selectedCourier)
+        .then((value) {
+      setState(() {
+        listCosts = value;
+        isLoading = false;
+      });
+      print(listCosts.toString());
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    provinceData = getProvinces();
+    originProvinceData = getProvinces();
+    destinationProvinceData = getProvinces();
   }
 
   @override
@@ -83,7 +101,7 @@ class _OngkirpageState extends State<Ongkirpage> {
             height: double.infinity,
             child: Column(children: [
               Flexible(
-                flex: 1,
+                flex: 3,
                 child: Column(
                   children: [
                     Padding(
@@ -92,7 +110,7 @@ class _OngkirpageState extends State<Ongkirpage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           DropdownButton(
-                            value: dropdowndefault,
+                            value: selectedCourier,
                             icon: const Icon(Icons.arrow_drop_down),
                             items: kurir.map((String value) {
                               return DropdownMenuItem(
@@ -102,7 +120,7 @@ class _OngkirpageState extends State<Ongkirpage> {
                             }).toList(),
                             onChanged: (String? value) {
                               setState(() {
-                                dropdowndefault = value!;
+                                selectedCourier = value!;
                               });
                             },
                           ),
@@ -149,7 +167,7 @@ class _OngkirpageState extends State<Ongkirpage> {
                           SizedBox(
                             width: 210,
                             child: FutureBuilder<List<Province>>(
-                              future: provinceData,
+                              future: originProvinceData,
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
                                   return DropdownButton(
@@ -262,7 +280,7 @@ class _OngkirpageState extends State<Ongkirpage> {
                           SizedBox(
                             width: 210,
                             child: FutureBuilder<List<Province>>(
-                              future: provinceData,
+                              future: destinationProvinceData,
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
                                   return DropdownButton(
@@ -363,17 +381,16 @@ class _OngkirpageState extends State<Ongkirpage> {
                       padding: const EdgeInsets.all(16.0),
                       child: ElevatedButton(
                         onPressed: () {
-                          if (originSelectedCity != null &&
-                              destinationSelectedCity != null) {
-                            Fluttertoast.showToast(
-                                backgroundColor: Colors.green,
-                                msg:
-                                    "Origin: ${originSelectedCity.cityName}, Destination: ${destinationSelectedCity.cityName}");
+                          if (originCityId.toString().isEmpty ||
+                              destinationCityId.toString().isEmpty ||
+                              selectedCourier.isEmpty ||
+                              ctrlBerat.text.isEmpty) {
+                            UiToast.toastErr("Semua field harus diisi!");
                           } else {
-                            Fluttertoast.showToast(
-                                backgroundColor: Colors.red,
-                                msg:
-                                    "Origin dan atau destination belum diset!");
+                            setState(() {
+                              isLoading = true;
+                            });
+                            getCostsData();
                           }
                         },
                         child: const Text("Hitung estimasi harga"),
@@ -382,9 +399,32 @@ class _OngkirpageState extends State<Ongkirpage> {
                   ],
                 ),
               ),
+              Flexible(
+                flex: 3,
+                child: Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: listCosts.isEmpty
+                      ? const Align(
+                          alignment: Alignment.center,
+                          child: Text("Tidak ada data."),
+                        )
+                      : ListView.builder(
+                          itemCount: listCosts.length,
+                          itemBuilder: (context, index) {
+                            return LazyLoadingList(
+                                initialSizeOfItems: 10,
+                                loadMore: () {},
+                                child: CardOngkir(listCosts[index]),
+                                index: index,
+                                hasMore: true);
+                          },
+                        ),
+                ),
+              )
             ]),
           ),
-          // isLoading ? UiLoading.loading() : Container(),
+          isLoading ? UiLoading.loading() : Container(),
         ],
       ),
     );

@@ -7,29 +7,17 @@ class Cost extends Equatable {
 
   const Cost({this.value, this.etd, this.note});
 
-  factory Cost.fromMap(Map<String, dynamic> data) => Cost(
-        value: data['value'] as int?,
-        etd: data['etd'] as String?,
-        note: data['note'] as String?,
+  factory Cost.fromJson(Map<String, dynamic> json) => Cost(
+        value: json['value'] as int?,
+        etd: json['etd'] as String?,
+        note: json['note'] as String?,
       );
 
-  Map<String, dynamic> toMap() => {
+  Map<String, dynamic> toJson() => {
         'value': value,
         'etd': etd,
         'note': note,
       };
-
-  /// `dart:convert`
-  ///
-  /// Parses the string and returns the resulting Json object as [Cost].
-  factory Cost.fromJson(String data) {
-    return Cost.fromMap(json.decode(data) as Map<String, dynamic>);
-  }
-
-  /// `dart:convert`
-  ///
-  /// Converts [Cost] to a JSON string.
-  String toJson() => json.encode(toMap());
 
   Cost copyWith({
     int? value,
